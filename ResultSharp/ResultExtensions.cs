@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 using static ResultSharp.Prelude;
 
 namespace ResultSharp
@@ -72,11 +72,42 @@ namespace ResultSharp
 			where E : Exception =>
 			result
 				.AndThen(x => Try<U, E>(() => f(x)));
+
+		static IEnumerable<object> GetErrors(ITuple tuple) =>
+			from item in tuple.EnumerateItems()
+			let result = (IResult)item
+			where result.IsErr
+			select result.UnwrapErrUntyped();
+
+		public static Result<(T1, T2)> Combine<T1, T2>(
+			this (Result<T1>,Result<T2>) resultTuple,
+			string errorMessageSeparator)
+		{
+			var (r1, r2) = resultTuple;
+			var errors = GetErrors(resultTuple)
+				.Select(x => (string)x)
+				.ToArray();
+
+			if (errors.Any())
+				return Err(string.Join(errorMessageSeparator, errors));
+			else
+				return Ok((r1.Unwrap(), r2.Unwrap()));
+		}
 	}
 
 	internal static class EnumerableExtensions
 	{
 		public static IEnumerable<T> Flatten<T>(this IEnumerable<IEnumerable<T>> nestedEnumerable) =>
 			nestedEnumerable.SelectMany(x => x);
+	}
+
+	internal static class ITupleExtensions
+	{
+		public static IEnumerable<object> EnumerateItems(this ITuple tuple)
+		{
+			var len = tuple.Length;
+			for (var i = 0; i < len; i++)
+				yield return tuple[i];
+		}
 	}
 }

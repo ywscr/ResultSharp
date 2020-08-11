@@ -6,7 +6,8 @@ namespace ResultSharp
 	[Serializable]
 	public readonly struct Result<T> :
 		ISerializable,
-		IEquatable<Result<T>>
+		IEquatable<Result<T>>,
+		IResult
 	{
 		internal readonly Result<T, string> Inner;
 
@@ -99,7 +100,10 @@ namespace ResultSharp
 		public override int GetHashCode() =>
 			Inner.GetHashCode();
 
-		public static bool operator ==(Result<T> a, Result<T> b) =>
+        object IResult.UnwrapErrUntyped() =>
+			UnwrapErr();
+
+        public static bool operator ==(Result<T> a, Result<T> b) =>
 			a.Equals(b);
 
 		public static bool operator !=(Result<T> a, Result<T> b) =>
